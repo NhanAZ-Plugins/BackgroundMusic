@@ -25,14 +25,13 @@ class Main extends PluginBase implements Listener {
 	public function onJoin(PlayerJoinEvent $event): void {
 		$player = $event->getPlayer();
 		$playerPos = $player->getPosition();
-		$packet = PlaySoundPacket::create(
-			soundName: "C418Sweden",
-			x: $playerPos->getX(),
-			y: $playerPos->getY(),
-			z: $playerPos->getZ(),
-			volume: 1.0,
-			pitch: 1.0
-		);
+		$packet = new PlaySoundPacket();
+		$packet->soundName = "C418Sweden";
+		$packet->x = $playerPos->getX();
+		$packet->y = $playerPos->getY();
+		$packet->z = $playerPos->getZ();
+		$packet->volume = 1.0;
+		$packet->pitch = 1.0;
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function () use ($player, $packet): void {
 			if ($player->isOnline()) {
 				$player->getNetworkSession()->sendDataPacket($packet);
