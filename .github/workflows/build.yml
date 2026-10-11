@@ -1,0 +1,65 @@
+name: Build and validate BackgroundMusic
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Analyze source and verify PHAR contents
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out BackgroundMusic source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check out released libRegRsp source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: NhanAZ-Libraries/libRegRsp
+          ref: 04766ae683a1ba63ed297730f7f2e8628aac3666 # v1.0.5
+          path: virions/libRegRsp
+          persist-credentials: false
+
+      - name: Check out pinned Axolotl-PM source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axolotl-pm/PocketMine-MP
+          ref: dfe0d07e48a9e8d5a4a242fa43ff1cd3b743a955 # 5.49.1
+          path: .devtools-dependencies/axolotl-pm
+          persist-credentials: false
+
+      - name: Set up Axolotl-PM PHP environment
+        uses: axolotl-pm/setup-php-action@b8c3f9add4f2ad4a5e2624a1112aba899ee8db0e
+        with:
+          php-version: "8.1"
+          pm-version-major: "5"
+          install-path: ./.php-bin
+
+      - name: Lint plugin PHP source
+        run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Analyze source and build PHAR with DevTools
+        id: build
+        uses: NhanAZ/DevTools@6606444fc32787a3e50275fdb668c2310e899740 # v1.0.3
+        with:
+          project: .
+          virions: virions
+          output: build
+          phpstan: max
+          phpstan-server: .devtools-dependencies/axolotl-pm
+
+      - name: Verify PHAR checksum and resource pack entries
+        shell: bash
+        env:
+          PHAR_PATH: ${{ steps.build.outputs.phar }}
+          PHAR_SHA256: ${{ steps.build.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          test "$(sha256sum "$PHAR_PATH" | cut -d ' ' -f 1)" = "$PHAR_SHA256"
+          php -r '$p=new Phar(getenv("PHAR_PATH")); foreach(["plugin.yml","LICENSE","src/NhanAZ/BackgroundMusic/Main.php","resources/BackgroundMusic Pack/manifest.json","resources/BackgroundMusic Pack/sounds/C418Sweden.ogg","META-INF/virions/libRegRsp/LICENSE"] as $entry){if(!$p->offsetExists($entry)){throw new RuntimeException("Missing PHAR entry: ".$entry);}}'
+          test "$(php -r '$p=new Phar(getenv("PHAR_PATH")); echo hash("sha256", $p["resources/BackgroundMusic Pack/sounds/C418Sweden.ogg"]->getContent());')" = "$(sha256sum 'resources/BackgroundMusic Pack/sounds/C418Sweden.ogg' | cut -d ' ' -f 1)"

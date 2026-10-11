@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NhanAZ\BackgroundMusic;
 
-use NhanAZ\libBedrock\ResourcePackManager;
+use NhanAZ\libRegRsp\libRegRsp;
 use pocketmine\event\Listener;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
@@ -15,11 +15,11 @@ class Main extends PluginBase implements Listener {
 
 	protected function onEnable(): void {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		ResourcePackManager::registerResourcePack($this);
+		libRegRsp::compileAndRegister($this);
 	}
 
 	protected function onDisable(): void {
-		ResourcePackManager::unRegisterResourcePack($this);
+		libRegRsp::unregister($this);
 	}
 
 	public function onJoin(PlayerJoinEvent $event): void {

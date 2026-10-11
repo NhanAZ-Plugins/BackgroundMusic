@@ -6,7 +6,7 @@ BackgroundMusic is an experimental Axolotl-PM plugin that schedules a custom mus
 
 The manifest declares plugin API `5.0.0`. The minimum compatible server version and a supported Axolotl-PM range have not been verified. There is no validated DevTools build, PHPStan max result, server runtime test, or GitHub release for the current source.
 
-The historical [Poggit manifest](.poggit.yml) references `libBedrock` 1.1.7 for resource pack registration. That dependency has not been migrated or verified for this plugin. Do not treat the source checkout as an installable release.
+The current source uses [libRegRsp](https://github.com/NhanAZ-Libraries/libRegRsp) to compile and register the resource pack. The [DevTools dependency declaration](devtools.yml) specifies the virion range. The [previous Poggit manifest](https://github.com/NhanAZ-Plugins/BackgroundMusic/blob/77dd77fc0386a781e41c52c4374a5d8d73359f01/.poggit.yml) referenced `libBedrock` 1.1.7. It was retired because that build path no longer matches the source. Do not treat the source checkout as an installable release.
 
 ## Behavior and limitations
 
@@ -19,7 +19,7 @@ The sound identifier comes from the [resource pack definition](resources/Backgro
 
 ## Building and installation
 
-This repository has no verified installable PHAR. Before a build or release, the plugin needs a compatible resource pack integration, PHPStan at maximum level, a validated PHAR built with [DevTools](https://github.com/NhanAZ/DevTools), and a server test with a connected client. Keep any test server and world separate from production data.
+This repository has no verified installable PHAR. The [build workflow](.github/workflows/build.yml) pins [DevTools](https://github.com/NhanAZ/DevTools) and its inputs to analyze the source, build a PHAR, and verify its contents. The workflow does not upload or release the PHAR while audio redistribution rights remain unresolved. A server test with a connected client is still required before release. Keep any test server and world separate from production data.
 
 ## Audio and license
 
