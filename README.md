@@ -4,22 +4,24 @@ BackgroundMusic is an experimental Axolotl-PM plugin that schedules a custom mus
 
 ## Current status
 
-The manifest declares plugin API `5.0.0`. The minimum compatible server version and a supported Axolotl-PM range have not been verified. There is no validated DevTools build, PHPStan max result, server runtime test, or GitHub release for the current source.
+The manifest declares plugin API `5.0.0`. The current source passes PHPStan max against pinned Axolotl-PM 5.0.0 and 5.49.1 source revisions. A local PHAR built with DevTools loaded and registered its pack on an isolated Axolotl-PM 5.49.1 server. Other runtime versions, playback on a connected client, and a supported version range remain unverified. There is no published GitHub release.
 
 The current source uses [libRegRsp](https://github.com/NhanAZ-Libraries/libRegRsp) to compile and register the resource pack. The [DevTools dependency declaration](devtools.yml) specifies the virion range. The [previous Poggit manifest](https://github.com/NhanAZ-Plugins/BackgroundMusic/blob/77dd77fc0386a781e41c52c4374a5d8d73359f01/.poggit.yml) referenced `libBedrock` 1.1.7. It was retired because that build path no longer matches the source. Do not treat the source checkout as an installable release.
 
 ## Behavior and limitations
 
 - A join queues the first `PlaySoundPacket` for the scheduler heartbeat, then repeats it every 4,400 ticks, about 220 seconds at 20 ticks per second.
-- The packet uses the player's position captured at join. It does not track later movement.
-- Each join schedules another task. The current code checks whether the player is online but does not cancel that task after a disconnect, so reconnects can accumulate tasks.
+- The packet uses the player's current position when each sound is sent.
+- Rejoining replaces the previous task for that player. Quit, offline detection, and plugin disable cancel scheduled playback.
 - There are no commands or permissions in `plugin.yml`.
 
 The sound identifier comes from the [resource pack definition](resources/BackgroundMusic%20Pack/sounds/sound_definitions.json). Playback on a connected Bedrock client has not been verified.
 
 ## Building and installation
 
-This repository has no verified installable PHAR. The [build workflow](.github/workflows/build.yml) pins [DevTools](https://github.com/NhanAZ/DevTools) and its inputs to analyze the source, build a PHAR, and verify its contents. The workflow does not upload or release the PHAR while audio redistribution rights remain unresolved. A server test with a connected client is still required before release. Keep any test server and world separate from production data.
+This repository has no published PHAR. The [build workflow](.github/workflows/build.yml) pins [DevTools](https://github.com/NhanAZ/DevTools) and its inputs to analyze the source, build a PHAR, and verify its contents. The workflow does not upload or release the PHAR while audio redistribution rights remain unresolved. A server test with a connected client is still required before release. Keep any test server and world separate from production data.
+
+The local playback lifecycle fixture runs with `php tests/scheduler-lifecycle.php`. It checks task replacement, cancellation, and packet position without a connected player. The [build workflow](.github/workflows/build.yml) also runs it before PHPStan and PHAR validation.
 
 ## Audio and license
 

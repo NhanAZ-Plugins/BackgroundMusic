@@ -48,8 +48,11 @@ jobs:
           pm-version-major: "5"
           install-path: ./.php-bin
 
-      - name: Lint plugin PHP source
-        run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Lint plugin PHP source and fixture
+        run: find src tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Check playback task lifecycle
+        run: php tests/scheduler-lifecycle.php
 
       - name: Analyze source and build PHAR with DevTools
         id: build
