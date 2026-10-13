@@ -56,7 +56,7 @@ jobs:
 
       - name: Analyze source and build PHAR with DevTools
         id: build
-        uses: NhanAZ/DevTools@6606444fc32787a3e50275fdb668c2310e899740 # v1.0.3
+        uses: NhanAZ/DevTools@f89c929de25ea5e45418b8caeb688db77d97c2f6 # v1.0.10
         with:
           project: .
           virions: virions
