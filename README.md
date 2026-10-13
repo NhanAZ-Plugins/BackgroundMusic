@@ -25,7 +25,7 @@ The local playback lifecycle fixture runs with `php tests/scheduler-lifecycle.ph
 
 ## Audio and license
 
-The root [GPL-3.0 license text](LICENSE) applies to the plugin source. It does not establish permission to redistribute the bundled `C418Sweden.ogg` recording. The [resource pack notice](resources/BackgroundMusic%20Pack/sounds/LICENSE) points to a C418 permission page that currently returns 404. A link to a free download or a purchase page is not a redistribution grant. Resolve the audio rights or use a recording with a verified compatible license before publishing a PHAR or resource pack.
+The root [GPL-3.0 license text](LICENSE) applies to the plugin source. It does not establish permission to redistribute the bundled `C418Sweden.ogg` recording. The [resource pack notice](resources/BackgroundMusic%20Pack/sounds/LICENSE) points to a C418 permission page that currently returns 404. The official [C418 Bandcamp listing for “Sweden”](https://c418.bandcamp.com/track/sweden) labels the track “all rights reserved.” A free download or purchase page does not grant redistribution rights. Resolve the audio rights or use a recording with a verified compatible license before publishing a PHAR or resource pack.
 
 Music credit: C418, "Sweden", *Minecraft Volume Alpha*. The [album is available from C418](https://c418.bandcamp.com/album/minecraft-volume-alpha).
 
