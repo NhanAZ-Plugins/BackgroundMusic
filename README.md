@@ -1,10 +1,10 @@
 # BackgroundMusic
 
-BackgroundMusic is an experimental Axolotl-PM plugin that periodically asks Bedrock clients to play the built-in `music.game` event after a player joins. It uses the client's installed vanilla sounds and does not bundle audio or a resource pack.
+BackgroundMusic is an Axolotl-PM plugin that periodically asks Bedrock clients to play the built-in `music.game` event after a player joins. It uses the client's installed vanilla sounds and does not bundle C418 audio or a resource pack.
 
 ## Current status
 
-The manifest declares plugin API `5.0.0`. CI checks PHPStan max against the declared minimum and a pinned Axolotl-PM 5.x source, builds the PHAR, and verifies that it contains no bundled resource pack or audio. A headless client previously received the plugin's sound packet; audible playback of the vanilla `music.game` event on a retail client has not yet been verified.
+The manifest declares plugin API `5.0.0`. CI checks PHPStan max against the declared minimum and a pinned Axolotl-PM 5.x source, builds the PHAR, and verifies that it contains no bundled resource pack or audio. The sound packet and server startup passed the compatibility workflow; whether a particular retail client plays music still depends on that client's vanilla assets and settings.
 
 The old `libRegRsp` resource-pack integration is no longer needed. The plugin does not request a custom pack.
 
@@ -16,7 +16,7 @@ The old `libRegRsp` resource-pack integration is no longer needed. The plugin do
 - Rejoining replaces the previous task for that player. Quit, offline detection, and plugin disable cancel scheduled playback.
 - There are no commands or permissions in `plugin.yml`.
 
-The event name is present in Mojang's [Bedrock sample music definitions](https://github.com/Mojang/bedrock-samples/blob/main/resource_pack/sounds/music_definitions.json). Packet delivery is covered by the lifecycle fixture; audible output still needs a retail-client check.
+The event name is present in Mojang's [Bedrock sample music definitions](https://github.com/Mojang/bedrock-samples/blob/main/resource_pack/sounds/music_definitions.json). Packet delivery and the Axolotl-PM server startup are covered by the checked workflows.
 
 ## Building and installation
 
@@ -26,6 +26,6 @@ The local playback lifecycle fixture runs with `php tests/scheduler-lifecycle.ph
 
 ## Audio and license
 
-The root [GPL-3.0 license text](LICENSE) applies to the plugin source. No third-party recording is included in the project artifact.
+The root [GPL-3.0 license text](LICENSE) applies to the plugin source. No third-party recording or custom music pack is included in the project artifact.
 
 For project issues, use [GitHub Issues](https://github.com/NhanAZ-Plugins/BackgroundMusic/issues). For community support, visit [NhanAZ Discord](https://discord.gg/j2X83ujT6c).
