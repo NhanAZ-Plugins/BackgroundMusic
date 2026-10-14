@@ -66,3 +66,12 @@ jobs:
           set -euo pipefail
           test "$(sha256sum "$PHAR_PATH" | cut -d ' ' -f 1)" = "$PHAR_SHA256"
           php -r '$p=new Phar(getenv("PHAR_PATH")); foreach(["plugin.yml","LICENSE","src/NhanAZ/BackgroundMusic/Main.php"] as $entry){if(!$p->offsetExists($entry)){throw new RuntimeException("Missing PHAR entry: ".$entry);}} foreach($p as $entry){if(str_starts_with($entry->getPathName(), "resources/")){throw new RuntimeException("Unexpected bundled resource: ".$entry->getPathName());}}'
+
+      - name: Upload verified plugin PHAR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BackgroundMusic-${{ github.sha }}
+          path: ${{ steps.build.outputs.phar }}
+          if-no-files-found: error
+          retention-days: 14
