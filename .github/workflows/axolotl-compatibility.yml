@@ -1,0 +1,225 @@
+name: Check Axolotl-PM compatibility
+
+on:
+  schedule:
+    - cron: "37 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      verify_baseline:
+        description: Run compatibility gates against the current baseline when no newer stable exists
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: axolotl-pm-compatibility
+  cancel-in-progress: false
+
+jobs:
+  compatibility:
+    name: Check BackgroundMusic against the latest stable release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out BackgroundMusic
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compare the stable release with the tested baseline
+        id: candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFY_BASELINE: ${{ inputs.verify_baseline || false }}
+        run: |
+          set -euo pipefail
+          api_headers=(
+            --header "Accept: application/vnd.github+json"
+            --header "Authorization: Bearer $GH_TOKEN"
+            --header "X-GitHub-Api-Version: 2022-11-28"
+          )
+          release="$(curl --fail --silent --show-error --location --retry 3 "${api_headers[@]}" https://api.github.com/repos/axolotl-pm/PocketMine-MP/releases/latest)"
+          tag="$(jq -er '.tag_name' <<< "$release")"
+          [[ "$(jq -r '.draft' <<< "$release")" == "false" ]]
+          [[ "$(jq -r '.prerelease' <<< "$release")" == "false" ]]
+          [[ "$tag" =~ ^5\.[0-9]+\.[0-9]+$ ]]
+          sha="$(curl --fail --silent --show-error --location --retry 3 "${api_headers[@]}" "https://api.github.com/repos/axolotl-pm/PocketMine-MP/commits/$tag" | jq -er '.sha')"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          asset_url="$(jq -er '[.assets[] | select(.name == "PocketMine-MP.phar") | .browser_download_url] | if length == 1 then .[0] else error("expected one official server PHAR asset") end' <<< "$release")"
+          [[ "$asset_url" == https://github.com/axolotl-pm/PocketMine-MP/releases/download/*/PocketMine-MP.phar ]]
+          baseline_version="5.49.1"
+          baseline_sha="dfe0d07e48a9e8d5a4a242fa43ff1cd3b743a955"
+          candidate=false
+          if [[ "$tag" != "$baseline_version" || "$sha" != "$baseline_sha" || "$VERIFY_BASELINE" == "true" ]]; then
+            candidate=true
+          fi
+          {
+            echo "tag=$tag"
+            echo "sha=$sha"
+            echo "asset_url=$asset_url"
+            echo "candidate=$candidate"
+          } >> "$GITHUB_OUTPUT"
+          if [[ "$candidate" == "true" ]]; then
+            printf '### Axolotl-PM compatibility candidate\n\nStable release `%s` at `%s`; tested baseline `%s` at `%s`. Compatibility gates will run.\n' "$tag" "$sha" "$baseline_version" "$baseline_sha" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'Latest stable `%s` at `%s` matches the tested baseline; compatibility gates were skipped.\n' "$tag" "$sha" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check out released libRegRsp source
+        if: steps.candidate.outputs.candidate == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: NhanAZ-Libraries/libRegRsp
+          ref: 04766ae683a1ba63ed297730f7f2e8628aac3666 # v1.0.5
+          path: virions/libRegRsp
+          persist-credentials: false
+
+      - name: Check out the candidate Axolotl-PM source
+        if: steps.candidate.outputs.candidate == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axolotl-pm/PocketMine-MP
+          ref: ${{ steps.candidate.outputs.sha }}
+          path: .devtools-dependencies/axolotl-pm-stable
+          persist-credentials: false
+
+      - name: Check out the minimum declared Axolotl-PM source
+        if: steps.candidate.outputs.candidate == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: axolotl-pm/PocketMine-MP
+          ref: b16cc69974d4e805d21e6328ab77c0e17cd7116d # 5.0.0
+          path: .devtools-dependencies/axolotl-pm-5.0.0
+          persist-credentials: false
+
+      - name: Set up PHP environment for Axolotl-PM
+        if: steps.candidate.outputs.candidate == 'true'
+        uses: axolotl-pm/setup-php-action@b8c3f9add4f2ad4a5e2624a1112aba899ee8db0e
+        with:
+          php-version: "8.1"
+          pm-version-major: "5"
+          install-path: ./.php-bin
+
+      - name: Lint plugin PHP source and fixture
+        if: steps.candidate.outputs.candidate == 'true'
+        run: find src tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Check playback task lifecycle
+        if: steps.candidate.outputs.candidate == 'true'
+        run: php tests/scheduler-lifecycle.php
+
+      - name: Analyze source and build PHAR with DevTools
+        if: steps.candidate.outputs.candidate == 'true'
+        id: build
+        uses: NhanAZ/DevTools@8d13a75aaf4f330fdbd93737d58be9cacc41e262 # v1.0.15
+        with:
+          project: .
+          virions: virions
+          output: build
+          phpstan: max
+          phpstan-server: |
+            .devtools-dependencies/axolotl-pm-5.0.0
+            .devtools-dependencies/axolotl-pm-stable
+
+      - name: Verify PHAR checksum and bundled audio resources
+        if: steps.candidate.outputs.candidate == 'true'
+        shell: bash
+        env:
+          PHAR_PATH: ${{ steps.build.outputs.phar }}
+          PHAR_SHA256: ${{ steps.build.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          test "$(sha256sum "$PHAR_PATH" | cut -d ' ' -f 1)" = "$PHAR_SHA256"
+          php -r '$p=new Phar(getenv("PHAR_PATH")); foreach(["plugin.yml","LICENSE","src/NhanAZ/BackgroundMusic/Main.php","resources/BackgroundMusic Pack/manifest.json","resources/BackgroundMusic Pack/sounds/C418Sweden.ogg","META-INF/virions/libRegRsp/LICENSE"] as $entry){if(!$p->offsetExists($entry)){throw new RuntimeException("Missing PHAR entry: ".$entry);}}'
+          test "$(php -r '$p=new Phar(getenv("PHAR_PATH")); echo hash("sha256", $p["resources/BackgroundMusic Pack/sounds/C418Sweden.ogg"]->getContent());')" = "$(sha256sum 'resources/BackgroundMusic Pack/sounds/C418Sweden.ogg' | cut -d ' ' -f 1)"
+
+      - name: Download the exact stable Axolotl-PM server PHAR
+        if: steps.candidate.outputs.candidate == 'true'
+        shell: bash
+        env:
+          SERVER_PHAR_URL: ${{ steps.candidate.outputs.asset_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 "$SERVER_PHAR_URL" --output "$RUNNER_TEMP/PocketMine-MP.phar"
+          echo "SERVER_PHAR_SHA256=$(sha256sum "$RUNNER_TEMP/PocketMine-MP.phar" | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
+
+      - name: Boot the candidate server and enable BackgroundMusic
+        if: steps.candidate.outputs.candidate == 'true'
+        shell: bash
+        env:
+          PHAR_PATH: ${{ steps.build.outputs.phar }}
+        run: |
+          set -euo pipefail
+          runtime="$RUNNER_TEMP/backgroundmusic-axolotl-runtime"
+          mkdir -p "$runtime/plugins"
+          cp "$PHAR_PATH" "$runtime/plugins/BackgroundMusic.phar"
+          cp "$RUNNER_TEMP/PocketMine-MP.phar" "$runtime/PocketMine-MP.phar"
+          cd "$runtime"
+          log="$runtime/server.log"
+          php PocketMine-MP.phar --no-wizard --disable-ansi > "$log" 2>&1 &
+          server_pid=$!
+          stop_server() {
+            if kill -0 "$server_pid" 2>/dev/null; then
+              kill -TERM "$server_pid" 2>/dev/null || true
+              for _ in $(seq 1 30); do
+                if ! kill -0 "$server_pid" 2>/dev/null; then
+                  break
+                fi
+                sleep 1
+              done
+              kill -KILL "$server_pid" 2>/dev/null || true
+            fi
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap stop_server EXIT
+          ready=false
+          for _ in $(seq 1 90); do
+            if grep -Fq 'Enabling BackgroundMusic' "$log" && grep -Fq 'Done (' "$log"; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat "$log"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [[ "$ready" != "true" ]]; then
+            cat "$log"
+            printf 'Axolotl-PM did not finish startup with BackgroundMusic enabled.\n' >&2
+            exit 1
+          fi
+          if grep -E '\[(Server thread/)?(CRITICAL|EMERGENCY|FATAL)\]' "$log"; then
+            printf 'Axolotl-PM emitted a severe log entry during startup.\n' >&2
+            exit 1
+          fi
+          printf 'BackgroundMusic enabled on Axolotl-PM %s at %s. Server PHAR SHA-256: %s. Plugin PHAR SHA-256: %s.\n' \
+            '${{ steps.candidate.outputs.tag }}' '${{ steps.candidate.outputs.sha }}' "$SERVER_PHAR_SHA256" "$(sha256sum "$runtime/plugins/BackgroundMusic.phar" | cut -d ' ' -f 1)" >> "$GITHUB_STEP_SUMMARY"
+          kill -TERM "$server_pid"
+          for _ in $(seq 1 30); do
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if kill -0 "$server_pid" 2>/dev/null; then
+            cat "$log"
+            printf 'Axolotl-PM did not shut down after SIGTERM.\n' >&2
+            exit 1
+          fi
+          wait "$server_pid"
+          trap - EXIT
+
+      - name: Record compatibility gate result
+        if: always() && steps.candidate.outputs.candidate == 'true'
+        env:
+          GATE_RESULT: ${{ job.status }}
+          CANDIDATE_TAG: ${{ steps.candidate.outputs.tag }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          SERVER_PHAR_SHA256: ${{ env.SERVER_PHAR_SHA256 || 'not downloaded' }}
+        run: |
+          printf '## Axolotl-PM compatibility result\n\n- Candidate: `%s` at `%s`\n- Server PHAR SHA-256: `%s`\n- Gate result: **%s**\n\nThe plugin source, API declaration, dependencies, and release were not modified.\n' \
+            "$CANDIDATE_TAG" "$CANDIDATE_SHA" "$SERVER_PHAR_SHA256" "$GATE_RESULT" >> "$GITHUB_STEP_SUMMARY"
