@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NhanAZ\BackgroundMusic;
 
-use NhanAZ\libRegRsp\libRegRsp;
 use pocketmine\event\Listener;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
@@ -20,7 +19,6 @@ class Main extends PluginBase implements Listener {
 
 	protected function onEnable(): void {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		libRegRsp::compileAndRegister($this);
 	}
 
 	protected function onDisable(): void {
@@ -28,7 +26,6 @@ class Main extends PluginBase implements Listener {
 			$cancel();
 		}
 		$this->cancelTasks = [];
-		libRegRsp::unregister($this);
 	}
 
 	public function onJoin(PlayerJoinEvent $event): void {
@@ -42,7 +39,7 @@ class Main extends PluginBase implements Listener {
 			}
 			$position = $player->getPosition();
 			$packet = new PlaySoundPacket();
-			$packet->soundName = "C418Sweden";
+			$packet->soundName = "music.game";
 			$packet->x = $position->getX();
 			$packet->y = $position->getY();
 			$packet->z = $position->getZ();

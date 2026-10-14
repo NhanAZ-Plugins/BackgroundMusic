@@ -68,15 +68,6 @@ jobs:
             printf 'Latest stable `%s` at `%s` matches the tested baseline; compatibility gates were skipped.\n' "$tag" "$sha" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Check out libRegRsp v1.0.6
-        if: steps.candidate.outputs.candidate == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: NhanAZ-Libraries/libRegRsp
-          ref: b38f41486a4a9fb9e4691cc8ff490b62ae34a4d4 # v1.0.6
-          path: virions/libRegRsp
-          persist-credentials: false
-
       - name: Check out the candidate Axolotl-PM source
         if: steps.candidate.outputs.candidate == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -117,14 +108,13 @@ jobs:
         uses: NhanAZ/DevTools@8d13a75aaf4f330fdbd93737d58be9cacc41e262 # v1.0.15
         with:
           project: .
-          virions: virions
           output: build
           phpstan: max
           phpstan-server: |
             .devtools-dependencies/axolotl-pm-5.0.0
             .devtools-dependencies/axolotl-pm-stable
 
-      - name: Verify PHAR checksum and bundled audio resources
+      - name: Verify PHAR checksum and absence of bundled resources
         if: steps.candidate.outputs.candidate == 'true'
         shell: bash
         env:
@@ -133,8 +123,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(sha256sum "$PHAR_PATH" | cut -d ' ' -f 1)" = "$PHAR_SHA256"
-          php -r '$p=new Phar(getenv("PHAR_PATH")); foreach(["plugin.yml","LICENSE","src/NhanAZ/BackgroundMusic/Main.php","resources/BackgroundMusic Pack/manifest.json","resources/BackgroundMusic Pack/sounds/C418Sweden.ogg","META-INF/virions/libRegRsp/LICENSE"] as $entry){if(!$p->offsetExists($entry)){throw new RuntimeException("Missing PHAR entry: ".$entry);}}'
-          test "$(php -r '$p=new Phar(getenv("PHAR_PATH")); echo hash("sha256", $p["resources/BackgroundMusic Pack/sounds/C418Sweden.ogg"]->getContent());')" = "$(sha256sum 'resources/BackgroundMusic Pack/sounds/C418Sweden.ogg' | cut -d ' ' -f 1)"
+          php -r '$p=new Phar(getenv("PHAR_PATH")); foreach(["plugin.yml","LICENSE","src/NhanAZ/BackgroundMusic/Main.php"] as $entry){if(!$p->offsetExists($entry)){throw new RuntimeException("Missing PHAR entry: ".$entry);}} foreach($p as $entry){if(str_starts_with($entry->getPathName(), "resources/")){throw new RuntimeException("Unexpected bundled resource: ".$entry->getPathName());}}'
 
       - name: Download the exact stable Axolotl-PM server PHAR
         if: steps.candidate.outputs.candidate == 'true'

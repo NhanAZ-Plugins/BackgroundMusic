@@ -129,19 +129,8 @@ namespace pocketmine\network\mcpe\protocol {
 	}
 }
 
-namespace NhanAZ\libRegRsp {
-	final class libRegRsp {
-		public static int $unregisterCalls = 0;
-
-		public static function unregister(object $plugin) : void {
-			++self::$unregisterCalls;
-		}
-	}
-}
-
 namespace {
 	use NhanAZ\BackgroundMusic\Main;
-	use NhanAZ\libRegRsp\libRegRsp;
 	use pocketmine\event\player\PlayerJoinEvent;
 	use pocketmine\event\player\PlayerQuitEvent;
 	use pocketmine\player\Player;
@@ -157,8 +146,8 @@ namespace {
 	if ($firstHandler->period !== 4400) { throw new \RuntimeException('Wrong repeat interval'); }
 	$first->position->x = 8;
 	$plugin->getScheduler()->tick();
-	if (count($first->session->packets) !== 1 || $first->session->packets[0]->x !== 8.0) {
-		throw new \RuntimeException('Sound packet did not use the current position');
+	if (count($first->session->packets) !== 1 || $first->session->packets[0]->x !== 8.0 || $first->session->packets[0]->soundName !== 'music.game') {
+		throw new \RuntimeException('Vanilla music packet did not use the expected event and current position');
 	}
 
 	$second = new Player('same-player');
@@ -181,8 +170,8 @@ namespace {
 	$active = new Player('active-player');
 	$plugin->onJoin(new PlayerJoinEvent($active));
 	$plugin->shutdown();
-	if (!$plugin->getScheduler()->handlers[3]->cancelled || libRegRsp::$unregisterCalls !== 1) {
-		throw new \RuntimeException('Disable did not cancel playback and unregister the pack');
+	if (!$plugin->getScheduler()->handlers[3]->cancelled) {
+		throw new \RuntimeException('Disable did not cancel playback');
 	}
 
 	echo "PASS: playback position, reconnect, quit, offline, and disable\n";
