@@ -17,11 +17,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check out released libRegRsp source
+      - name: Check out libRegRsp v1.0.6
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: NhanAZ-Libraries/libRegRsp
-          ref: 04766ae683a1ba63ed297730f7f2e8628aac3666 # v1.0.5
+          ref: b38f41486a4a9fb9e4691cc8ff490b62ae34a4d4 # v1.0.6
           path: virions/libRegRsp
           persist-credentials: false
 

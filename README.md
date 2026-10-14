@@ -8,6 +8,8 @@ The manifest declares plugin API `5.0.0`. The current source passes PHPStan max 
 
 The current source uses [libRegRsp](https://github.com/NhanAZ-Libraries/libRegRsp) to compile and register the resource pack. The [DevTools dependency declaration](devtools.yml) specifies the virion range. The [previous Poggit manifest](https://github.com/NhanAZ-Plugins/BackgroundMusic/blob/77dd77fc0386a781e41c52c4374a5d8d73359f01/.poggit.yml) referenced `libBedrock` 1.1.7. It was retired because that build path no longer matches the source. Do not treat the source checkout as an installable release.
 
+The plugin requires players to accept the resource pack. On Axolotl-PM API builds without a runtime setter for this requirement, set `force_resources: true` in `resource_packs/resource_packs.yml` before starting the server.
+
 ## Behavior and limitations
 
 - A join queues the first `PlaySoundPacket` for the scheduler heartbeat, then repeats it every 4,400 ticks, about 220 seconds at 20 ticks per second.
