@@ -50,8 +50,8 @@ jobs:
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
           asset_url="$(jq -er '[.assets[] | select(.name == "PocketMine-MP.phar") | .browser_download_url] | if length == 1 then .[0] else error("expected one official server PHAR asset") end' <<< "$release")"
           [[ "$asset_url" == https://github.com/axolotl-pm/PocketMine-MP/releases/download/*/PocketMine-MP.phar ]]
-          baseline_version="5.49.1"
-          baseline_sha="dfe0d07e48a9e8d5a4a242fa43ff1cd3b743a955"
+          baseline_version="5.51.1"
+          baseline_sha="e881fc1bc1c401545baf6bd1f824e41ff3f57bd1"
           candidate=false
           if [[ "$tag" != "$baseline_version" || "$sha" != "$baseline_sha" || "$VERIFY_BASELINE" == "true" ]]; then
             candidate=true
@@ -105,7 +105,7 @@ jobs:
       - name: Analyze source and build PHAR with DevTools
         if: steps.candidate.outputs.candidate == 'true'
         id: build
-        uses: NhanAZ/DevTools@8d13a75aaf4f330fdbd93737d58be9cacc41e262 # v1.0.15
+        uses: NhanAZ/DevTools@v2 # v2
         with:
           project: .
           output: build
