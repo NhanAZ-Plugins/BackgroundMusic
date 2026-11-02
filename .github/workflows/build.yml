@@ -74,4 +74,3 @@ jobs:
           name: BackgroundMusic-${{ github.sha }}
           path: ${{ steps.build.outputs.phar }}
           if-no-files-found: error
-          retention-days: 14
