@@ -26,7 +26,7 @@ The event name is present in Mojang's [Bedrock sample music definitions](https:/
 
 ## Building and installation
 
-The [build workflow](.github/workflows/build.yml) pins [DevTools](https://github.com/NhanAZ/DevTools), analyzes the source, builds a PHAR, and verifies its contents. The project no longer distributes C418 audio. Keep any test server and world separate from production data.
+The [build workflow](.github/workflows/build.yml) pins [DevTools](https://github.com/AxolotlBucketLabs/DevTools), analyzes the source, builds a PHAR, and verifies its contents. The project no longer distributes C418 audio. Keep any test server and world separate from production data.
 
 The local playback lifecycle fixture runs with `php tests/scheduler-lifecycle.php`. It checks task replacement, cancellation, and packet position without a connected player. The [build workflow](.github/workflows/build.yml) also runs it before PHPStan and PHAR validation.
 
