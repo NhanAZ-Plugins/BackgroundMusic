@@ -105,7 +105,7 @@ jobs:
       - name: Analyze source and build PHAR with DevTools
         if: steps.candidate.outputs.candidate == 'true'
         id: build
-        uses: AxolotlBucketLabs/DevTools@v3 # v3.0.0
+        uses: AxolotlBucketLabs/DevTools@latest
         with:
           project: .
           output: build
